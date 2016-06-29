@@ -9,6 +9,10 @@ defmodule InventoryApi.InventoryAdjustmentView do
     %{data: render_one(inventory_adjustment, InventoryApi.InventoryAdjustmentView, "inventory_adjustment.json")}
   end
 
+  def render("show.json", %{inventory_count: inventory_count}) do
+    %{data: render_one(inventory_count, InventoryApi.InventoryCountView, "inventory_count.json")}
+  end
+
   def render("inventory_adjustment.json", %{inventory_adjustment: inventory_adjustment}) do
     %{id: inventory_adjustment.id,
       external_transaction_id: inventory_adjustment.external_transaction_id,

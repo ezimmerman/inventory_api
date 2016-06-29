@@ -34,7 +34,8 @@ defmodule InventoryApi.Mixfile do
      {:postgrex, ">= 0.0.0"},
      {:phoenix_ecto, "~> 2.0"},
      {:gettext, "~> 0.9"},
-     {:cowboy, "~> 1.0"}]
+     {:cowboy, "~> 1.0"},
+     {:decimal, "~> 1.1.0" }]
   end
 
   # Aliases are shortcut or tasks specific to the current project.
