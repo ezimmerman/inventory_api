@@ -33,9 +33,7 @@ defmodule InventoryApi.InventoryAdjustmentController do
       "InventoryCount" ->
         initial_qty = Decimal.new(inventory_adjustment_params["quantity"])
         quantity = Decimal.sub(Decimal.new(initial_qty), calculate_stock_on_hand(inventory_adjustment_params["item_id"], inventory_adjustment_params["location_id"]))
-          adjustment_changeset = InventoryAdjustment.changeset(%InventoryAdjustment{}, %{inventory_adjustment_params | "quantity" => quantity})
-          {_, adjustment} = Repo.insert(adjustment_changeset)
-          case Repo.insert(%InventoryCount{inventory_adjustment_id: adjustment.id, quantity: initial_qty}) do
+          case insert_adjustment_count(initial_qty, quantity, inventory_adjustment_params) do
             {:ok, inventory_count} ->
               conn
               |> put_status(:created)
@@ -93,5 +91,14 @@ defmodule InventoryApi.InventoryAdjustmentController do
       select: sum(a.quantity),
       where: a.item_id == ^item_id and a.location_id == ^location_id and a.inserted_at > ^latest_stock_count.inserted_at)
     end
-end
+  end
+
+  def insert_adjustment_count(count_qty, adjust_qty, params) do
+      adjustment_changeset = InventoryAdjustment.changeset(%InventoryAdjustment{}, %{params | "quantity" => adjust_qty})
+    Repo.transaction fn ->
+      adjustment = Repo.insert!(adjustment_changeset)
+      count = Ecto.build_assoc(adjustment, :inventory_count, quantity: count_qty)
+      Repo.insert!(count)
+    end
+  end
 end

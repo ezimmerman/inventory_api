@@ -9,6 +9,8 @@ defmodule InventoryApi.InventoryAdjustment do
     field :item_id, :string
     field :location_id, :string
 
+    has_one :inventory_count, InventoryApi.InventoryCount
+
     timestamps
   end
 
