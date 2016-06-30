@@ -32,8 +32,8 @@ defmodule InventoryApi.InventoryAdjustmentController do
         end
       "InventoryCount" ->
         initial_qty = Decimal.new(inventory_adjustment_params["quantity"])
-        quantity = Decimal.sub(Decimal.new(initial_qty), calculate_stock_on_hand(inventory_adjustment_params["item_id"], inventory_adjustment_params["location_id"]))
-          case insert_adjustment_count(initial_qty, quantity, inventory_adjustment_params) do
+        adjust_quantity = Decimal.sub(Decimal.new(initial_qty), calculate_stock_on_hand(inventory_adjustment_params["item_id"], inventory_adjustment_params["location_id"]))
+          case insert_adjustment_count(initial_qty, adjust_quantity, inventory_adjustment_params) do
             {:ok, inventory_count} ->
               conn
               |> put_status(:created)
@@ -87,9 +87,7 @@ defmodule InventoryApi.InventoryAdjustmentController do
       where: a.item_id == ^item_id and a.location_id == ^location_id)
     else
       latest_stock_count = Repo.get_by(InventoryCount, inventory_adjustment_id: latest_stock_count_adjustment.id)
-      Decimal.add latest_stock_count.quantity  Repo.one(from a in InventoryAdjustment,
-      select: sum(a.quantity),
-      where: a.item_id == ^item_id and a.location_id == ^location_id and a.inserted_at > ^latest_stock_count.inserted_at)
+      Decimal.add(latest_stock_count.quantity,  get_total_adjustments(item_id, location_id, latest_stock_count))
     end
   end
 
@@ -100,5 +98,16 @@ defmodule InventoryApi.InventoryAdjustmentController do
       count = Ecto.build_assoc(adjustment, :inventory_count, quantity: count_qty)
       Repo.insert!(count)
     end
+  end
+
+  def get_total_adjustments(item_id, location_id, latest_stock_count) do
+     total_adjustments = Repo.one(from a in InventoryAdjustment,
+     select: sum(a.quantity),
+     where: a.item_id == ^item_id and a.location_id == ^location_id and a.inserted_at > ^latest_stock_count.inserted_at)
+     if is_nil(total_adjustments) do
+       Decimal.new 0
+     else
+       total_adjustments
+     end
   end
 end
