@@ -14,11 +14,9 @@ defmodule InventoryApi.InventoryAdjustmentController do
   end
 
   def create(conn, %{"inventory_adjustment" => inventory_adjustment_params}) do
-
+    changeset = InventoryAdjustment.changeset(%InventoryAdjustment{}, inventory_adjustment_params)
     case inventory_adjustment_params["transaction_code"] do
       "InventoryAdjustment" ->
-        changeset = InventoryAdjustment.changeset(%InventoryAdjustment{}, inventory_adjustment_params)
-
         case Repo.insert(changeset) do
           {:ok, inventory_adjustment} ->
             conn
@@ -44,6 +42,10 @@ defmodule InventoryApi.InventoryAdjustmentController do
               |> put_status(:unprocessable_entity)
               |> render(InventoryApi.ChangesetView, "error.json", changeset: changeset)
           end
+        _ ->
+          conn
+          |> put_status(:unprocessable_entity)
+          |> render(InventoryApi.ChangesetView, "error.json", changeset: changeset)
     end
   end
 
