@@ -1,8 +1,10 @@
 defmodule InventoryApi.InventoryAdjustmentControllerTest do
   use InventoryApi.ConnCase
-
+  alias InventoryApi.TestHelpers
   alias InventoryApi.InventoryAdjustment
-  @valid_attrs %{external_transaction_id: "some content", item_id: "some content", location_id: "some content", quantity: "120.5", transaction_code: "InventoryAdjustment", uom_code: "some content"}
+  alias InventoryApi.InventoryCount
+
+  @valid_attrs %{external_transaction_id: "some content", item_id: "item1", location_id: "location1", quantity: "120.5", transaction_code: "InventoryAdjustment", uom_code: "some content"}
   @invalid_attrs %{}
 
   setup %{conn: conn} do
@@ -36,6 +38,20 @@ defmodule InventoryApi.InventoryAdjustmentControllerTest do
     conn = post conn, inventory_adjustment_path(conn, :create), inventory_adjustment: @valid_attrs
     assert json_response(conn, 201)["data"]["id"]
     assert Repo.get_by(InventoryAdjustment, @valid_attrs)
+  end
+
+  test "creates and renders resource when InventoryCount type and data is valid", %{conn: conn} do
+    inventory_count = %{@valid_attrs | transaction_code:  "InventoryCount"}
+    adjustment = %InventoryApi.InventoryAdjustment{item_id: "item1", location_id: "location1", quantity: Decimal.new("10"),
+      transaction_code: "InventoryAdjustment", uom_code: "EA"}
+    TestHelpers.insert_adjustment(adjustment)
+
+    conn = post conn, inventory_adjustment_path(conn, :create), inventory_adjustment: inventory_count
+    assert json_response(conn, 201)["data"]["id"]
+    inventory_count = Repo.get_by(InventoryCount, %{})
+    inventory_adjustment = Repo.get(InventoryAdjustment, inventory_count.inventory_adjustment_id)
+    assert inventory_count.quantity == Decimal.new(120.5)
+    assert inventory_adjustment.quantity == Decimal.new(110.5)
   end
 
   test "does not create resource and renders errors when data is invalid", %{conn: conn} do
